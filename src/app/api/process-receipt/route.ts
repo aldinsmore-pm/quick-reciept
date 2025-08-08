@@ -1,6 +1,9 @@
 import sharp from "sharp";
 import { createWorker } from "tesseract.js";
 import { NextRequest, NextResponse } from "next/server";
+import { promises as fs } from "node:fs";
+import path from "node:path";
+import os from "node:os";
 import { getOpenAIClient } from "@/lib/openai";
 import { ReceiptSchema } from "@/lib/receiptSchema";
 
@@ -25,10 +28,27 @@ async function runLocalOCR(imageBuffer: Buffer): Promise<string> {
   if (process.env.DISABLE_LOCAL_OCR === "true") {
     return "";
   }
-  // Use CDN URLs so serverless can fetch assets instead of reading local FS
-  const resolvedWorkerPath = "https://unpkg.com/tesseract.js@6.0.1/dist/worker.min.js";
-  const corePath = "https://unpkg.com/tesseract.js-core@6.0.1/tesseract-core-simd.wasm";
+  // Prefer CDN URLs so serverless can fetch assets instead of reading local FS
+  const cdnWorkerUrl = "https://unpkg.com/tesseract.js@6.0.1/dist/worker.min.js";
+  const cdnCoreUrl = "https://unpkg.com/tesseract.js-core@6.0.1/tesseract-core-simd.wasm";
   const resolvedLangPath = "https://tessdata.projectnaptha.com/4.0.0";
+
+  async function ensureLocalCopy(url: string, filename: string): Promise<string> {
+    const tmpDir = os.tmpdir();
+    const target = path.join(tmpDir, filename);
+    try {
+      // If already exists, reuse
+      await fs.access(target);
+      return target;
+    } catch {
+      const res = await fetch(url);
+      if (!res.ok || !res.body) throw new Error(`Failed to fetch ${url}: ${res.status}`);
+      const arrayBuffer = await res.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      await fs.writeFile(target, buffer);
+      return target;
+    }
+  }
 
   // Create worker with explicit asset paths; load/init language separately
   const createWorkerFn = createWorker as unknown as (
@@ -40,12 +60,26 @@ async function runLocalOCR(imageBuffer: Buffer): Promise<string> {
     recognize: (image: Buffer | string) => Promise<{ data: { text: string } }>;
     terminate: () => Promise<void>;
   }>;
-  const worker = await createWorkerFn("eng", {
-    workerPath: resolvedWorkerPath,
-    corePath,
-    langPath: resolvedLangPath,
-    gzip: true,
-  });
+  let worker: Awaited<ReturnType<typeof createWorkerFn>>;
+  try {
+    // Try CDN paths first
+    worker = await createWorkerFn("eng", {
+      workerPath: cdnWorkerUrl,
+      corePath: cdnCoreUrl,
+      langPath: resolvedLangPath,
+      gzip: true,
+    });
+  } catch {
+    // Fallback: download assets to /tmp and load from local file paths
+    const localWorker = await ensureLocalCopy(cdnWorkerUrl, "tess-worker.min.js");
+    const localCore = await ensureLocalCopy(cdnCoreUrl, "tesseract-core-simd.wasm");
+    worker = await createWorkerFn("eng", {
+      workerPath: localWorker,
+      corePath: localCore,
+      langPath: resolvedLangPath,
+      gzip: true,
+    });
+  }
   try {
     // Ensure language is ready
     await worker.loadLanguage("eng");
