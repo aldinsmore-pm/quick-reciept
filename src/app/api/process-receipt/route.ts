@@ -13,7 +13,6 @@ async function preprocessImage(imageBuffer: Buffer): Promise<Buffer> {
   const isServerless = Boolean(process.env.VERCEL);
   const targetWidth = isServerless ? 1200 : 1800; // reduce memory usage on Vercel
   const processed = await sharp(imageBuffer)
-    .limitInputPixels(100 * 1000 * 1000)
     .rotate()
     .resize({ width: targetWidth, withoutEnlargement: true })
     .grayscale()
