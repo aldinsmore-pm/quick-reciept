@@ -1,13 +1,11 @@
 import sharp from "sharp";
 import { createWorker } from "tesseract.js";
-import path from "node:path";
-import fs from "node:fs";
 import { NextRequest, NextResponse } from "next/server";
 import { getOpenAIClient } from "@/lib/openai";
 import { ReceiptSchema } from "@/lib/receiptSchema";
 
 export const runtime = "nodejs"; // ensure Node runtime for sharp
-export const maxDuration = 60; // Vercel edge constraint safety (ignored locally)
+export const maxDuration = 300; // allow more time on Pro for OCR
 
 async function preprocessImage(imageBuffer: Buffer): Promise<Buffer> {
   const isServerless = Boolean(process.env.VERCEL);
@@ -27,16 +25,10 @@ async function runLocalOCR(imageBuffer: Buffer): Promise<string> {
   if (process.env.DISABLE_LOCAL_OCR === "true") {
     return "";
   }
-  // Resolve Tesseract assets explicitly for Vercel bundling/runtime
-  const projectRoot = process.cwd();
-  const resolvedWorkerPath = path.join(projectRoot, "node_modules/tesseract.js/dist/worker.min.js");
-  const resolvedCorePath = path.join(projectRoot, "node_modules/tesseract.js-core/tesseract-core-simd.wasm");
-  const resolvedLangPath = path.join(projectRoot, "node_modules/tesseract.js/languages");
-
-  // Fallbacks in case simd build is renamed in a future minor version
-  const corePath = fs.existsSync(resolvedCorePath)
-    ? resolvedCorePath
-    : path.join(projectRoot, "node_modules/tesseract.js-core/tesseract-core.wasm");
+  // Use CDN URLs so serverless can fetch assets instead of reading local FS
+  const resolvedWorkerPath = "https://unpkg.com/tesseract.js@6.0.1/dist/worker.min.js";
+  const corePath = "https://unpkg.com/tesseract.js-core@6.0.1/tesseract-core-simd.wasm";
+  const resolvedLangPath = "https://tessdata.projectnaptha.com/4.0.0";
 
   // Create worker with explicit asset paths; load/init language separately
   const createWorkerFn = createWorker as unknown as (
