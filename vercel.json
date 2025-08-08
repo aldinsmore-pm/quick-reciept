@@ -1,0 +1,26 @@
+{
+  "functions": {
+    "src/app/**/route.ts": {
+      "maxDuration": 60,
+      "memory": 3008,
+      "includeFiles": [
+        "node_modules/tesseract.js-core/**/*",
+        "node_modules/tesseract.js/dist/worker.min.js",
+        "node_modules/tesseract.js/src/worker-script/**",
+        "node_modules/tesseract.js/languages/**"
+      ]
+    },
+    "src/app/**/route.js": {
+      "maxDuration": 60,
+      "memory": 3008,
+      "includeFiles": [
+        "node_modules/tesseract.js-core/**/*",
+        "node_modules/tesseract.js/dist/worker.min.js",
+        "node_modules/tesseract.js/src/worker-script/**",
+        "node_modules/tesseract.js/languages/**"
+      ]
+    }
+  }
+}
+
+
