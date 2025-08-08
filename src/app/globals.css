@@ -24,3 +24,22 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Utility polish */
+.card {
+  border-radius: 0.375rem; /* rounded-md */
+  background: #ffffff; /* white */
+  border: 1px solid #e5e7eb; /* gray-200 */
+  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.03);
+}
+.card-title {
+  font-weight: 500;
+}
+
+/* Gentle parallax wobble for hills */
+@keyframes hillFloatSlow { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes hillFloatMid { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes hillFloatFast { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+.hill-slow { animation: hillFloatSlow 8s ease-in-out infinite; }
+.hill-mid { animation: hillFloatMid 7s ease-in-out infinite; }
+.hill-fast { animation: hillFloatFast 6s ease-in-out infinite; }
