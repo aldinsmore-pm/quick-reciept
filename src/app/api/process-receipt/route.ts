@@ -10,9 +10,12 @@ export const runtime = "nodejs"; // ensure Node runtime for sharp
 export const maxDuration = 60; // Vercel edge constraint safety (ignored locally)
 
 async function preprocessImage(imageBuffer: Buffer): Promise<Buffer> {
+  const isServerless = Boolean(process.env.VERCEL);
+  const targetWidth = isServerless ? 1200 : 1800; // reduce memory usage on Vercel
   const processed = await sharp(imageBuffer)
+    .limitInputPixels(100 * 1000 * 1000)
     .rotate()
-    .resize({ width: 1800, withoutEnlargement: true })
+    .resize({ width: targetWidth, withoutEnlargement: true })
     .grayscale()
     .normalise()
     .sharpen()
@@ -22,6 +25,9 @@ async function preprocessImage(imageBuffer: Buffer): Promise<Buffer> {
 }
 
 async function runLocalOCR(imageBuffer: Buffer): Promise<string> {
+  if (process.env.DISABLE_LOCAL_OCR === "true") {
+    return "";
+  }
   // Resolve Tesseract assets explicitly for Vercel bundling/runtime
   const projectRoot = process.cwd();
   const resolvedWorkerPath = path.join(projectRoot, "node_modules/tesseract.js/dist/worker.min.js");
