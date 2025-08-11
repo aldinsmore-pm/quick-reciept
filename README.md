@@ -1,4 +1,4 @@
-# Quick Reciept
+# Quick Receipt
 
 AI‑powered receipt parsing for landscaping businesses. Upload or snap a photo of a receipt and get structured, validated, itemized expenses with categories.
 
@@ -101,7 +101,7 @@ Running Tesseract in serverless can be resource‑intensive. This project suppor
 - `npm run start` — run production build locally
 
 ## Notes
-- App name is intentionally spelled “Quick Reciept”.
+- App name: Quick Receipt.
 - Keep your OpenAI key private. Do not commit `.env.local`.
 
 ## Roadmap ideas
